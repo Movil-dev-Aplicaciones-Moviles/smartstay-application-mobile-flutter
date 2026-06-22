@@ -1,57 +1,55 @@
-import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:http/http.dart' as http;
 import 'package:smart_stay/features/auth/data/login_request_dto.dart';
 import 'package:smart_stay/features/auth/data/login_response_dto.dart';
+// 👇 NUEVOS IMPORTS PARA REGISTER
+import 'package:smart_stay/features/auth/data/register_request_dto.dart';
+import 'package:smart_stay/features/auth/data/register_response_dto.dart';
 
 class AuthService {
-  Future<LoginResponseDto?> login(LoginRequestDto request) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  final String _baseUrl = 'https://application-mobile-backend.onrender.com';
 
-    if (request.email.trim().length < 3 || request.password.length < 6) {
-      return null;
+  // ============================================================
+  // LOGIN (ya existente)
+  // ============================================================
+  Future<LoginResponseDto> login(LoginRequestDto request) async {
+    final Uri uri = Uri.parse('$_baseUrl/api/v1/authentication/sign-in');
+
+    final http.Response response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode == HttpStatus.ok ||
+        response.statusCode == HttpStatus.created) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return LoginResponseDto.fromJson(json);
+    } else {
+      throw Exception('Error al iniciar sesión: ${response.statusCode}');
     }
-
-    final username = request.email.trim().toLowerCase();
-    final role = _roleFromUsername(username);
-
-    final map = {
-      'id': _idFromRole(role),
-      'username': username,
-      'token': 'jwt-demo-token',
-      'role': role,
-      'hotelId': role == 'chain_admin' ? null : 1,
-      'chainId': role == 'chain_admin' ? null : 1,
-    };
-
-    return LoginResponseDto.fromJson(map);
   }
 
-  String _roleFromUsername(String username) {
-    if (username.contains('chain')) return 'chain_admin';
-    if (username.contains('admin')) return 'admin';
-    if (username.contains('reception')) return 'reception';
-    if (username.contains('housekeeping')) return 'housekeeping';
-    if (username.contains('maintenance')) return 'maintenance';
-    if (username.contains('staff')) return 'staff';
-    return 'guest';
-  }
+  // ============================================================
+  // REGISTER (nuevo, con la misma estructura)
+  // ============================================================
+  Future<RegisterResponseDto> register(RegisterRequestDto request) async {
+    final Uri uri = Uri.parse('$_baseUrl/api/v1/authentication/sign-up');
 
-  int _idFromRole(String role) {
-    switch (role) {
-      case 'chain_admin':
-        return 1;
-      case 'admin':
-        return 2;
-      case 'staff':
-        return 3;
-      case 'reception':
-        return 4;
-      case 'housekeeping':
-        return 5;
-      case 'maintenance':
-        return 6;
-      default:
-        return 7;
+    final http.Response response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode == HttpStatus.ok ||
+        response.statusCode == HttpStatus.created) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return RegisterResponseDto.fromJson(json);
+    } else {
+      throw Exception('Error al registrarse: ${response.statusCode}');
     }
   }
 }

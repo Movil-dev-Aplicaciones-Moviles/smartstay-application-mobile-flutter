@@ -17,36 +17,27 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController username = TextEditingController(
-    text: 'guest@smartstay.com',
-  );
-
-  final TextEditingController password = TextEditingController(
-    text: '123456',
-  );
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   void dispose() {
-    username.dispose();
-    password.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  void goToRegisterPage() {
+  void _goToRegister() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const RegisterPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const RegisterPage()),
     );
   }
 
-  void goToMainPage(User user) {
+  void _goToMain(User user) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => MainPage(user: user),
-      ),
+      MaterialPageRoute(builder: (_) => MainPage(user: user)),
     );
   }
 
@@ -57,109 +48,130 @@ class _LoginPageState extends State<LoginPage> {
         listener: (context, state) {
           if (state is LoginFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error)),
+              SnackBar(
+                content: Text(state.error),
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+              ),
             );
           }
-
           if (state is LoginSuccess) {
-            goToMainPage(state.user);
+            _goToMain(state.user);
           }
         },
         child: PageWrapper(
-          padding: const EdgeInsets.all(22),
+          padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 12),
+                const SizedBox(height: 40),
                 const _BrandHeader(),
-                const SizedBox(height: 26),
+                const SizedBox(height: 32),
                 SmartCard(
-                  padding: const EdgeInsets.all(22),
+                  padding: const EdgeInsets.all(28),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Acceso SmartStay',
+                        'Bienvenido',
                         style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
                           color: AppTheme.dark,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Demo académica con roles, hoteles, habitaciones, reservas, pagos, perfiles y reportes.',
+                      Text(
+                        'Ingresa con tus credenciales',
                         style: TextStyle(
-                          color: Color(0xFF64748B),
-                          height: 1.4,
+                          color: Colors.grey.shade600,
+                          fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 28),
                       TextField(
-                        controller: username,
+                        controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
-                          labelText: 'Username / email',
-                          hintText: 'guest@smartstay.com',
+                          labelText: 'Correo electrónico',
+                          hintText: 'ejemplo@correo.com',
                           prefixIcon: Icon(Icons.email_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: password,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          hintText: 'Mínimo 6 caracteres',
-                          prefixIcon: Icon(Icons.lock_outline),
+                          border: OutlineInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 18),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Contraseña',
+                          hintText: '••••••••',
+                          prefixIcon: Icon(Icons.lock_outline),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            // Acción para recuperar contraseña
+                          },
+                          child: const Text('¿Olvidaste tu contraseña?'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 54,
                         child: BlocBuilder<LoginViewModel, LoginState>(
                           builder: (context, state) {
-                            return FilledButton.icon(
-                              onPressed: state is LoginLoading
+                            final isLoading = state is LoginLoading;
+                            return FilledButton(
+                              onPressed: isLoading
                                   ? null
                                   : () {
                                       context.read<LoginViewModel>().login(
-                                            email: username.text.trim(),
-                                            password: password.text,
+                                            email: _emailController.text.trim(),
+                                            password: _passwordController.text,
                                           );
                                     },
-                              icon: state is LoginLoading
+                              child: isLoading
                                   ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
+                                      height: 22,
+                                      width: 22,
                                       child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                                        strokeWidth: 2.5,
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Icon(Icons.login),
-                              label: const Text('Iniciar sesión'),
+                                  : const Text(
+                                      'Iniciar sesión',
+                                      style: TextStyle(fontSize: 16),
+                                    ),
                             );
                           },
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: OutlinedButton.icon(
-                          onPressed: goToRegisterPage,
-                          icon: const Icon(Icons.person_add_alt_1),
-                          label: const Text('Registro guest'),
-                        ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '¿No tienes cuenta?',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                          TextButton(
+                            onPressed: _goToRegister,
+                            child: const Text('Regístrate'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                const _DemoRolesCard(),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -169,6 +181,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+// ============================================================
+// COMPONENTE DE MARCA (Header con logo y eslogan)
+// ============================================================
 class _BrandHeader extends StatelessWidget {
   const _BrandHeader();
 
@@ -176,100 +191,59 @@ class _BrandHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF176B87),
-            Color(0xFF64CCC5),
-          ],
+          colors: [Color(0xFF1A2A3A), Color(0xFF2C3E50)], // Tonos oscuros elegantes
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.22),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 30,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.shield_outlined,
+              color: Color(0xFF1A2A3A),
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.hotel,
-                  color: AppTheme.primary,
-                  size: 30,
+              Text(
+                'SmartStay',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
-              SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SmartStay',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  Text(
-                    'Demo académica',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ],
+              Text(
+                'Tu hogar inteligente',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  letterSpacing: 0.3,
+                ),
               ),
             ],
           ),
-          SizedBox(height: 24),
-          Text(
-            'Gestión hotelera móvil',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              height: 1.1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DemoRolesCard extends StatelessWidget {
-  const _DemoRolesCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.80),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Usuarios demo según roles del sistema',
-            style: TextStyle(fontWeight: FontWeight.w900),
-          ),
-          SizedBox(height: 8),
-          Text('guest@smartstay.com / 123456  → guest'),
-          Text('admin@smartstay.com / 123456  → admin'),
-          Text('chain@smartstay.com / 123456  → chain_admin'),
-          Text('staff@smartstay.com / 123456  → staff limitado'),
         ],
       ),
     );

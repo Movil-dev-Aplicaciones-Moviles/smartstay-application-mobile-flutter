@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:smart_stay/core/di/dependency_injection.dart'; // 👈 Importa getIt
 import 'package:smart_stay/core/theme/app_theme.dart';
 import 'package:smart_stay/core/widgets/page_wrapper.dart';
 import 'package:smart_stay/core/widgets/smart_card.dart';
 import 'package:smart_stay/core/widgets/status_chip.dart';
+import 'package:smart_stay/features/auth/domain/auth_repository.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -12,33 +14,70 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final TextEditingController username = TextEditingController();
-  final TextEditingController password = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  // ✅ OBTENEMOS EL REPOSITORIO DESDE getIt (igual que en LoginViewModel)
+  late final AuthRepository _authRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Así se obtiene la instancia correcta de AuthRepository (ya inyectada)
+    _authRepository = getIt<AuthRepository>();
+  }
 
   @override
   void dispose() {
-    username.dispose();
-    password.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  void register() {
-    if (username.text.trim().length < 3 || password.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El username debe tener 3 caracteres y el password mínimo 6.'),
-        ),
+  Future<void> _register() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.length < 6) {
+      _showSnackbar(
+        'El correo es obligatorio y la contraseña debe tener al menos 6 caracteres.',
+        isError: true,
       );
       return;
     }
 
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await _authRepository.register(
+        email: email,
+        password: password,
+      );
+
+      if (user != null) {
+        _showSnackbar(
+          'Cuenta creada exitosamente para ${user.username}. ¡Ya puedes iniciar sesión!',
+        );
+        Navigator.pop(context);
+      } else {
+        _showSnackbar('Error al crear la cuenta.', isError: true);
+      }
+    } catch (e) {
+      _showSnackbar(e.toString(), isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnackbar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cuenta huésped preparada correctamente'),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.redAccent : Colors.green,
+        behavior: SnackBarBehavior.floating,
       ),
     );
-
-    Navigator.pop(context);
   }
 
   @override
@@ -59,7 +98,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
-                      'Registro guest',
+                      'Crear cuenta',
                       style: TextStyle(
                         fontSize: 25,
                         fontWeight: FontWeight.w900,
@@ -85,8 +124,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Color(0xFF0F172A),
-                            Color(0xFF176B87),
+                            Color(0xFF1A2A3A),
+                            Color(0xFF2C3E50),
                           ],
                         ),
                       ),
@@ -94,23 +133,23 @@ class _RegisterPageState extends State<RegisterPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           StatusChip(
-                            label: 'Registro huésped',
+                            label: 'Registro',
                             color: AppTheme.secondary,
                             icon: Icons.verified_user_outlined,
                           ),
                           SizedBox(height: 18),
                           Text(
-                            'El registro público solo debe crear usuarios guest.',
+                            'Comienza a usar SmartStay',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 23,
-                              fontWeight: FontWeight.w900,
-                              height: 1.15,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              height: 1.2,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          SizedBox(height: 6),
                           Text(
-                            'Los roles admin, chain_admin y staff se asignan desde administración, no desde el registro libre.',
+                            'Crea tu cuenta para acceder a todas las funcionalidades.',
                             style: TextStyle(
                               color: Colors.white70,
                               height: 1.4,
@@ -124,53 +163,53 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: Column(
                         children: [
                           TextField(
-                            controller: username,
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
-                              labelText: 'Username / email',
-                              hintText: 'nuevo@smartstay.com',
-                              prefixIcon: Icon(Icons.person_outline),
+                              labelText: 'Correo electrónico',
+                              hintText: 'ejemplo@correo.com',
+                              prefixIcon: Icon(Icons.email_outlined),
+                              border: OutlineInputBorder(),
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 16),
                           TextField(
-                            controller: password,
+                            controller: _passwordController,
                             obscureText: true,
                             decoration: const InputDecoration(
-                              labelText: 'Password',
+                              labelText: 'Contraseña',
                               hintText: 'Mínimo 6 caracteres',
                               prefixIcon: Icon(Icons.lock_outline),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: AppTheme.secondary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: const Text(
-                              'Rol inicial: guest. Luego administración puede asignar otros roles.',
-                              style: TextStyle(
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              border: OutlineInputBorder(),
                             ),
                           ),
                           const SizedBox(height: 22),
                           SizedBox(
                             width: double.infinity,
                             height: 52,
-                            child: FilledButton.icon(
-                              onPressed: register,
-                              icon: const Icon(Icons.check_circle_outline),
-                              label: const Text('Crear cuenta guest'),
+                            child: FilledButton(
+                              onPressed: _isLoading ? null : _register,
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Registrarse',
+                                      style: TextStyle(fontSize: 16),
+                                    ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text('Ya tengo una cuenta'),
+                            child: const Text(
+                              '¿Ya tienes cuenta? Inicia sesión',
+                            ),
                           ),
                         ],
                       ),
