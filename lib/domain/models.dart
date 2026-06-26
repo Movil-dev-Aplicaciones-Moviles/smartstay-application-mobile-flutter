@@ -1,80 +1,203 @@
-part of '../main.dart';
-
 class AppUser {
   final int id;
   final String username;
+  final String token;
   final String role;
-  final String status;
   final int? hotelId;
   final int? chainId;
-  final String createdAt;
-  final String updatedAt;
 
-  AppUser({required this.id, required this.username, required this.role, required this.status, this.hotelId, this.chainId, required this.createdAt, required this.updatedAt});
+  const AppUser({
+    required this.id,
+    required this.username,
+    required this.token,
+    required this.role,
+    this.hotelId,
+    this.chainId,
+  });
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
-      id: readInt(json, 'id') ?? readInt(json, 'Id') ?? 0,
-      username: readString(json, 'username') ?? readString(json, 'Username') ?? '',
-      role: readString(json, 'role') ?? readString(json, 'Role') ?? 'guest',
-      status: readString(json, 'status') ?? readString(json, 'Status') ?? 'Active',
-      hotelId: readInt(json, 'hotelId') ?? readInt(json, 'HotelId'),
-      chainId: readInt(json, 'chainId') ?? readInt(json, 'ChainId'),
-      createdAt: readString(json, 'createdAt') ?? readString(json, 'CreatedAt') ?? 'Desconocido',
-      updatedAt: readString(json, 'updatedAt') ?? readString(json, 'UpdatedAt') ?? 'Desconocido',
+      id: readInt(json, 'id'),
+      username: readString(json, 'username'),
+      token: readString(json, 'token'),
+      role: readString(json, 'role', fallback: 'guest'),
+      hotelId: readNullableInt(json, 'hotelId'),
+      chainId: readNullableInt(json, 'chainId'),
     );
   }
 }
 
-class AppProfile {
+class Hotel {
   final int id;
-  final String fullName;
-  final String email;
-  final String streetAddress;
-
-  AppProfile({required this.id, required this.fullName, required this.email, required this.streetAddress});
-
-  factory AppProfile.fromJson(Map<String, dynamic> json) {
-    return AppProfile(
-      id: readInt(json, 'id') ?? readInt(json, 'Id') ?? 0,
-      fullName: readString(json, 'fullName') ?? readString(json, 'FullName') ?? '',
-      email: readString(json, 'email') ?? readString(json, 'Email') ?? '',
-      streetAddress: readString(json, 'streetAddress') ?? readString(json, 'StreetAddress') ?? '',
-    );
-  }
-}
-
-class AppHotel {
-  final int id;
+  final int hostId;
   final String name;
   final String location;
-  final String type;
+  final String imageUrl;
+  final String description;
   final double basePrice;
+  final String type;
+  final List<String> amenities;
 
-  AppHotel({required this.id, required this.name, required this.location, required this.type, required this.basePrice});
+  const Hotel({
+    required this.id,
+    required this.hostId,
+    required this.name,
+    required this.location,
+    required this.imageUrl,
+    required this.description,
+    required this.basePrice,
+    required this.type,
+    required this.amenities,
+  });
 
-  factory AppHotel.fromJson(Map<String, dynamic> json) {
-    return AppHotel(
-      id: readInt(json, 'id') ?? readInt(json, 'Id') ?? 0,
-      name: readString(json, 'name') ?? readString(json, 'Name') ?? '',
-      location: readString(json, 'location') ?? readString(json, 'Location') ?? '',
-      type: readString(json, 'type') ?? readString(json, 'Type') ?? 'Hotel',
-      basePrice: readDouble(json, 'basePrice') ?? readDouble(json, 'BasePrice') ?? 0,
+  factory Hotel.fromJson(Map<String, dynamic> json) {
+    return Hotel(
+      id: readInt(json, 'id'),
+      hostId: readInt(json, 'hostId'),
+      name: readString(json, 'name', fallback: 'Alojamiento'),
+      location: readString(json, 'location', fallback: 'Ubicación no disponible'),
+      imageUrl: readString(json, 'imageUrl'),
+      description: readString(json, 'description', fallback: 'Sin descripción disponible.'),
+      basePrice: readDouble(json, 'basePrice'),
+      type: readString(json, 'type', fallback: 'Hotel'),
+      amenities: readStringList(json, 'amenities'),
     );
   }
 }
 
-String? readString(Map<String, dynamic> json, String key) => json[key]?.toString();
-int? readInt(Map<String, dynamic> json, String key) {
-  final value = json[key];
+class Room {
+  final int id;
+  final int hotelId;
+  final int roomTypeId;
+  final String roomTypeName;
+  final double price;
+  final String description;
+  final List<String> amenities;
+
+  const Room({
+    required this.id,
+    required this.hotelId,
+    required this.roomTypeId,
+    required this.roomTypeName,
+    required this.price,
+    required this.description,
+    required this.amenities,
+  });
+
+  factory Room.fromJson(Map<String, dynamic> json) {
+    return Room(
+      id: readInt(json, 'id'),
+      hotelId: readInt(json, 'hotelId'),
+      roomTypeId: readInt(json, 'roomTypeId'),
+      roomTypeName: readString(json, 'roomTypeName', fallback: 'Habitación'),
+      price: readDouble(json, 'price'),
+      description: readString(json, 'description', fallback: 'Sin descripción disponible.'),
+      amenities: readStringList(json, 'amenities'),
+    );
+  }
+}
+
+class Booking {
+  final int id;
+  final int roomId;
+  final String guestName;
+  final String guestEmail;
+  final String checkInDate;
+  final String checkOutDate;
+  final String status;
+
+  const Booking({
+    required this.id,
+    required this.roomId,
+    required this.guestName,
+    required this.guestEmail,
+    required this.checkInDate,
+    required this.checkOutDate,
+    required this.status,
+  });
+
+  factory Booking.fromJson(Map<String, dynamic> json) {
+    return Booking(
+      id: readInt(json, 'id'),
+      roomId: readInt(json, 'roomId'),
+      guestName: readString(json, 'guestName'),
+      guestEmail: readString(json, 'guestEmail'),
+      checkInDate: readString(json, 'checkInDate'),
+      checkOutDate: readString(json, 'checkOutDate'),
+      status: readString(json, 'status', fallback: 'Pending'),
+    );
+  }
+}
+
+class Payment {
+  final int id;
+  final int bookingId;
+  final String transactionId;
+  final double amount;
+  final String status;
+  final String cardNumberMasked;
+  final String paymentDate;
+
+  const Payment({
+    required this.id,
+    required this.bookingId,
+    required this.transactionId,
+    required this.amount,
+    required this.status,
+    required this.cardNumberMasked,
+    required this.paymentDate,
+  });
+
+  factory Payment.fromJson(Map<String, dynamic> json) {
+    return Payment(
+      id: readInt(json, 'id'),
+      bookingId: readInt(json, 'bookingId'),
+      transactionId: readString(json, 'transactionId'),
+      amount: readDouble(json, 'amount'),
+      status: readString(json, 'status'),
+      cardNumberMasked: readString(json, 'cardNumberMasked'),
+      paymentDate: readString(json, 'paymentDate'),
+    );
+  }
+}
+
+String readString(Map<String, dynamic> json, String key, {String fallback = ''}) {
+  final value = json[key] ?? json[_upperFirst(key)];
+  if (value == null) return fallback;
+  return value.toString();
+}
+
+int readInt(Map<String, dynamic> json, String key, {int fallback = 0}) {
+  final value = json[key] ?? json[_upperFirst(key)];
+  if (value == null) return fallback;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString()) ?? fallback;
+}
+
+int? readNullableInt(Map<String, dynamic> json, String key) {
+  final value = json[key] ?? json[_upperFirst(key)];
   if (value == null) return null;
   if (value is int) return value;
+  if (value is num) return value.toInt();
   return int.tryParse(value.toString());
 }
 
-double? readDouble(Map<String, dynamic> json, String key) {
-  final value = json[key];
-  if (value == null) return null;
+double readDouble(Map<String, dynamic> json, String key, {double fallback = 0}) {
+  final value = json[key] ?? json[_upperFirst(key)];
+  if (value == null) return fallback;
+  if (value is double) return value;
   if (value is num) return value.toDouble();
-  return double.tryParse(value.toString());
+  return double.tryParse(value.toString()) ?? fallback;
+}
+
+List<String> readStringList(Map<String, dynamic> json, String key) {
+  final value = json[key] ?? json[_upperFirst(key)];
+  if (value is List) return value.map((e) => e.toString()).toList();
+  return const [];
+}
+
+String _upperFirst(String text) {
+  if (text.isEmpty) return text;
+  return text[0].toUpperCase() + text.substring(1);
 }

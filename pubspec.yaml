@@ -1,26 +1,17 @@
 name: smart_stay
-description: "SmartStay mobile application."
+
+description: "SmartStay Flutter client app connected to backend."
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-<<<<<<< HEAD
   sdk: ">=3.4.0 <4.0.0"
-=======
-  sdk: ^3.12.0
->>>>>>> 153201114b5d913f3fcd999f4ec3d29f6d5b532b
 
 dependencies:
   flutter:
     sdk: flutter
-
   http: ^1.6.0
-  provider: ^6.1.5+1
-  get_it: ^8.0.2
-  flutter_bloc: ^9.1.1
   flutter_secure_storage: ^10.3.1
-  sqflite: ^2.4.3
-  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
