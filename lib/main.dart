@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -35,11 +36,33 @@ void main() {
 
 class SmartStayApp extends StatelessWidget {
   const SmartStayApp({super.key});
+=======
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smart_stay/core/di/dependency_injection.dart';
+import 'package:smart_stay/core/theme/app_theme.dart';
+import 'package:smart_stay/features/auth/presentation/login_page.dart';
+import 'package:smart_stay/features/auth/presentation/login_view_model.dart';
+
+void main() {
+  setup();
+  runApp(
+    BlocProvider<LoginViewModel>(
+      create: (context) => getIt<LoginViewModel>(),
+      child: const MainApp(),
+    ),
+  );
+}
+
+class MainApp extends void StatelessWidget {
+  const MainApp({super.key});
+>>>>>>> 153201114b5d913f3fcd999f4ec3d29f6d5b532b
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+<<<<<<< HEAD
       title: 'SmartStay',
       theme: ThemeData(
         useMaterial3: true,
@@ -67,6 +90,10 @@ class SmartStayApp extends StatelessWidget {
         ),
       ),
       home: const LoginScreen(),
+=======
+      theme: AppTheme.lightTheme,
+      home: const LoginPage(),
+>>>>>>> 153201114b5d913f3fcd999f4ec3d29f6d5b532b
     );
   }
 }
