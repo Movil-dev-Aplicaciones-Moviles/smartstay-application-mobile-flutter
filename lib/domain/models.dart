@@ -51,12 +51,14 @@ class Hotel {
   });
 
   factory Hotel.fromJson(Map<String, dynamic> json) {
+    final name = readString(json, 'name', fallback: 'Alojamiento');
+    final rawImage = readString(json, 'imageUrl');
     return Hotel(
       id: readInt(json, 'id'),
       hostId: readInt(json, 'hostId'),
-      name: readString(json, 'name', fallback: 'Alojamiento'),
+      name: name,
       location: readString(json, 'location', fallback: 'Ubicación no disponible'),
-      imageUrl: readString(json, 'imageUrl'),
+      imageUrl: normalizedHotelImage(name, rawImage),
       description: readString(json, 'description', fallback: 'Sin descripción disponible.'),
       basePrice: readDouble(json, 'basePrice'),
       type: readString(json, 'type', fallback: 'Hotel'),
@@ -137,6 +139,28 @@ class Booking {
       status: readString(json, 'status', fallback: 'Pending'),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'roomId': roomId,
+        'guestName': guestName,
+        'guestEmail': guestEmail,
+        'checkInDate': checkInDate,
+        'checkOutDate': checkOutDate,
+        'status': status,
+      };
+
+  Booking copyWith({String? status}) {
+    return Booking(
+      id: id,
+      roomId: roomId,
+      guestName: guestName,
+      guestEmail: guestEmail,
+      checkInDate: checkInDate,
+      checkOutDate: checkOutDate,
+      status: status ?? this.status,
+    );
+  }
 }
 
 class Payment {
@@ -210,4 +234,16 @@ List<String> readStringList(Map<String, dynamic> json, String key) {
 String _upperFirst(String text) {
   if (text.isEmpty) return text;
   return text[0].toUpperCase() + text.substring(1);
+}
+
+String normalizedHotelImage(String hotelName, String rawUrl) {
+  final name = hotelName.toLowerCase();
+  if (name.contains('cusco') || name.contains('andean') || name.contains('lodge')) {
+    return 'https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (name.contains('bolivar') || name.contains('bolívar') || name.contains('grand')) {
+    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (rawUrl.trim().isNotEmpty && !rawUrl.contains('placehold.co')) return rawUrl;
+  return 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80';
 }

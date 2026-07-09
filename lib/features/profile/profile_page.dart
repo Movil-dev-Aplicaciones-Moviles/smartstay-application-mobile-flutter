@@ -6,7 +6,9 @@ import '../../features/client/client_shell.dart';
 import '../../shared/ui.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final VoidCallback? onOpenBookings;
+
+  const ProfilePage({super.key, this.onOpenBookings});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -120,8 +122,29 @@ class _ProfilePageState extends State<ProfilePage> {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const ClientShell()), (_) => false);
   }
 
-  void _showComingSoon(String feature) {
-    showSmartSnack(context, '$feature estará disponible en una próxima versión.');
+  void _openHelpSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 8, 22, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Centro de ayuda', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 14),
+            const Text('Soporte SmartStay', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            const Text('Atención para reservas, pagos y cuenta.', style: TextStyle(color: kMuted)),
+            const SizedBox(height: 18),
+            SmartButton(text: 'Entendido', icon: Icons.check, onPressed: () => Navigator.pop(context)),
+          ],
+        ),
+      ),
+    );
   }
 
   void _openProfileSheet() {
@@ -224,7 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF2F2F2)),
               child: IconButton(
                 tooltip: 'Notificaciones',
-                onPressed: () => _showComingSoon('Notificaciones'),
+                onPressed: _openHelpSheet,
                 icon: const Icon(Icons.notifications_none_outlined, color: kSecondary),
               ),
             ),
@@ -239,7 +262,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _ProfileShortcutGrid(
           onProfile: _openProfileSheet,
           onSecurity: _openSecuritySheet,
-          onBookings: () => _showComingSoon('Acceso rápido a reservas'),
+          onBookings: widget.onOpenBookings ?? _openHelpSheet,
         ),
         const SizedBox(height: 24),
         Text('Cuenta', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
@@ -248,7 +271,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _ProfileMenuItem(icon: Icons.person_outline, title: 'Ver perfil', onTap: _openViewProfileSheet),
         _ProfileMenuItem(icon: Icons.privacy_tip_outlined, title: 'Privacidad y seguridad', onTap: _openSecuritySheet),
         const Divider(height: 34),
-        _ProfileMenuItem(icon: Icons.help_outline, title: 'Centro de ayuda', onTap: () => _showComingSoon('Centro de ayuda')),
+        _ProfileMenuItem(icon: Icons.help_outline, title: 'Centro de ayuda', onTap: _openHelpSheet),
         if (_isSignedIn)
           _ProfileMenuItem(icon: Icons.logout, title: 'Cerrar sesión', showChevron: false, onTap: _logout)
         else
@@ -367,7 +390,7 @@ class _ProfileShortcutGrid extends StatelessWidget {
           child: _ShortcutCard(
             icon: Icons.calendar_month_outlined,
             title: 'Reservas',
-            subtitle: 'Estado',
+            subtitle: 'Ver',
             onTap: onBookings,
           ),
         ),

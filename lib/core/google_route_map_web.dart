@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 const Color _primaryDark = Color(0xFF35506B);
 const Color _softBlue = Color(0xFFE8F1F8);
 const Color _line = Color(0xFFE6E9ED);
+const Color _muted = Color(0xFF6F7782);
 
 class GoogleRouteMap extends StatefulWidget {
   final String destination;

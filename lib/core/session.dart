@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../domain/models.dart';
 
 class SessionStore {
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
+  static const String _localBookingsKey = 'local_bookings';
   static AppUser? currentUser;
 
   static Future<void> save(AppUser user) async {
@@ -38,6 +41,40 @@ class SessionStore {
       chainId: int.tryParse(await _storage.read(key: 'chainId') ?? ''),
     );
     return currentUser;
+  }
+
+  static Future<void> saveLocalBooking(Booking booking) async {
+    final bookings = await readLocalBookings();
+    final filtered = bookings.where((item) => item.id != booking.id).toList();
+    filtered.insert(0, booking);
+    await _storage.write(
+      key: _localBookingsKey,
+      value: jsonEncode(filtered.map((item) => item.toJson()).toList()),
+    );
+  }
+
+  static Future<List<Booking>> readLocalBookings() async {
+    final raw = await _storage.read(key: _localBookingsKey);
+    if (raw == null || raw.trim().isEmpty) return const [];
+    try {
+      final parsed = jsonDecode(raw);
+      if (parsed is List) {
+        return parsed
+            .whereType<Map>()
+            .map((item) => Booking.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+      }
+    } catch (_) {}
+    return const [];
+  }
+
+  static Future<void> updateLocalBookingStatus(int bookingId, String status) async {
+    final bookings = await readLocalBookings();
+    final updated = bookings.map((item) => item.id == bookingId ? item.copyWith(status: status) : item).toList();
+    await _storage.write(
+      key: _localBookingsKey,
+      value: jsonEncode(updated.map((item) => item.toJson()).toList()),
+    );
   }
 
   static Future<void> clear() async {

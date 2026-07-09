@@ -23,7 +23,9 @@ class _HotelsPageState extends State<HotelsPage> {
   }
 
   void _reload() {
-    setState(() => _future = _api.getHotels());
+    setState(() {
+      _future = _api.getHotels();
+    });
   }
 
   Future<void> _openRoute(Hotel hotel) async {

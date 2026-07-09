@@ -26,16 +26,20 @@ class _ClientShellState extends State<ClientShell> {
     });
   }
 
-  void _openLoginPrompt(int targetIndex) {
-    final label = switch (targetIndex) {
-      2 => 'ver tus reservas',
-      _ => 'administrar tu perfil',
-    };
 
+  void _openBookingsFromProfile() {
+    if (SessionStore.currentUser == null) {
+      _openLoginPrompt(2);
+      return;
+    }
+    setState(() => _index = 2);
+  }
+
+  void _openLoginPrompt(int _) {
     showAuthPromptSheet(
       context,
       title: 'Inicia sesión para continuar',
-      message: 'Puedes seguir explorando alojamientos sin cuenta. Para $label necesitamos saber quién eres.',
+      message: 'Ingresa a tu cuenta para continuar.',
       onLogin: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
     );
   }
@@ -50,7 +54,7 @@ class _ClientShellState extends State<ClientShell> {
         onBookingCreated: (_) => setState(() => _index = 2),
       ),
       const BookingsPage(),
-      const ProfilePage(),
+      ProfilePage(onOpenBookings: _openBookingsFromProfile),
     ];
 
     return Scaffold(

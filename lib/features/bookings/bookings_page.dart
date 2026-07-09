@@ -31,7 +31,9 @@ class _BookingsPageState extends State<BookingsPage> {
   }
 
   void _reload() {
-    setState(() => _future = _load());
+    setState(() {
+      _future = _load();
+    });
   }
 
   void _openLogin() {
