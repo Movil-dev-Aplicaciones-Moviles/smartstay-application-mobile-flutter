@@ -59,52 +59,52 @@ class _RegisterPageState extends State<RegisterPage> {
       backgroundColor: kSurface,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Crear Cuenta', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w400)),
-              const SizedBox(height: 32),
-              TextField(
-                controller: _username,
-                decoration: const InputDecoration(
-                  labelText: 'Usuario',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _password,
-                obscureText: _obscure,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscure = !_obscure),
+          padding: const EdgeInsets.all(22),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: SmartCard(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Crear cuenta', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  const Text('Regístrate como cliente para reservar habitaciones.', style: TextStyle(color: kMuted)),
+                  const SizedBox(height: 24),
+                  TextField(controller: _username, decoration: const InputDecoration(labelText: 'Usuario', prefixIcon: Icon(Icons.email))),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _password,
+                    obscureText: _obscure,
+                    decoration: InputDecoration(
+                      labelText: 'Contraseña',
+                      prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setState(() => _obscure = !_obscure),
+                      ),
+                    ),
                   ),
-                  border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _confirm,
+                    obscureText: _obscure,
+                    decoration: const InputDecoration(labelText: 'Confirmar contraseña', prefixIcon: Icon(Icons.lock)),
+                  ),
+                  const SizedBox(height: 24),
+                  SmartButton(text: 'Registrarme', icon: Icons.person_add, loading: _loading, onPressed: _register),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: TextButton(
+                      onPressed: _loading ? null : () => Navigator.pop(context),
+                      child: const Text('Ya tengo cuenta'),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _confirm,
-                obscureText: _obscure,
-                decoration: const InputDecoration(
-                  labelText: 'Confirmar contraseña',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                ),
-              ),
-              const SizedBox(height: 28),
-              SmartButton(text: 'Registrarse', icon: Icons.person_add, loading: _loading, onPressed: _register),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: _loading ? null : () => Navigator.pop(context),
-                child: const Text('¿Ya tienes cuenta? Inicia sesión'),
-              ),
-            ],
+            ),
           ),
         ),
       ),

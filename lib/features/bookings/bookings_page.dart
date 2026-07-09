@@ -3,6 +3,7 @@ import '../../core/api_client.dart';
 import '../../core/session.dart';
 import '../../domain/models.dart';
 import '../../shared/ui.dart';
+import '../auth/login_page.dart';
 
 class BookingsPage extends StatefulWidget {
   const BookingsPage({super.key});
@@ -13,121 +14,219 @@ class BookingsPage extends StatefulWidget {
 
 class _BookingsPageState extends State<BookingsPage> {
   final ApiClient _api = ApiClient();
-  final TextEditingController _roomId = TextEditingController(text: '1');
-  final TextEditingController _guestName = TextEditingController(text: 'Jaredt Montes');
-  final TextEditingController _guestEmail = TextEditingController();
-  final TextEditingController _checkIn = TextEditingController(text: '2026-06-20');
-  final TextEditingController _checkOut = TextEditingController(text: '2026-06-22');
-  bool _loading = false;
-  Booking? _created;
+  late Future<_BookingsData> _future;
+  int? _updatingBookingId;
 
   @override
   void initState() {
     super.initState();
-    _guestEmail.text = SessionStore.currentUser?.username ?? '';
+    _future = _load();
   }
 
-  @override
-  void dispose() {
-    _roomId.dispose();
-    _guestName.dispose();
-    _guestEmail.dispose();
-    _checkIn.dispose();
-    _checkOut.dispose();
-    super.dispose();
+  Future<_BookingsData> _load() async {
+    final bookings = await _api.getMyBookings();
+    final rooms = await _api.getRooms();
+    final hotels = await _api.getHotels();
+    return _BookingsData(bookings: bookings, rooms: rooms, hotels: hotels);
   }
 
-  Future<void> _createBooking() async {
-    final roomId = int.tryParse(_roomId.text.trim());
-    if (roomId == null || roomId <= 0) {
-      showSmartSnack(context, 'Ingresa un Room ID válido.');
-      return;
-    }
-    if (_guestName.text.trim().isEmpty || _guestEmail.text.trim().isEmpty) {
-      showSmartSnack(context, 'Completa nombre y correo del huésped.');
-      return;
-    }
+  void _reload() {
+    setState(() => _future = _load());
+  }
 
-    setState(() => _loading = true);
+  void _openLogin() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+  }
+
+  Future<void> _cancelBooking(Booking booking) async {
+    setState(() => _updatingBookingId = booking.id);
     try {
-      final booking = await _api.createBooking(
-        roomId: roomId,
-        guestName: _guestName.text.trim(),
-        guestEmail: _guestEmail.text.trim(),
-        checkInDate: _checkIn.text.trim(),
-        checkOutDate: _checkOut.text.trim(),
-      );
+      await _api.cancelMyBooking(booking.id);
       if (!mounted) return;
-      setState(() => _created = booking);
-      showSmartSnack(context, 'Reserva creada correctamente. ID: ${booking.id}');
+      showSmartSnack(context, 'Reserva cancelada correctamente.');
+      _reload();
     } catch (e) {
       if (!mounted) return;
-      showSmartSnack(context, 'No se pudo crear la reserva: $e');
+      showSmartSnack(context, 'No se pudo cancelar la reserva: $e');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _updatingBookingId = null);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        SmartCard(
-          child: Column(
+    if (SessionStore.currentUser == null) {
+      return AuthRequiredCard(
+        title: 'Tus reservas aparecerán aquí',
+        message: 'Explora hoteles sin cuenta. Cuando quieras reservar o revisar tus reservas, inicia sesión.',
+        onLogin: _openLogin,
+      );
+    }
+
+    return FutureBuilder<_BookingsData>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingView(message: 'Cargando tus reservas...');
+        }
+        if (snapshot.hasError) {
+          return EmptyState(message: snapshot.error.toString(), buttonText: 'Reintentar', onPressed: _reload);
+        }
+
+        final data = snapshot.data ?? const _BookingsData(bookings: [], rooms: [], hotels: []);
+        if (data.bookings.isEmpty) {
+          return EmptyState(
+            message: 'Todavía no tienes reservas. Elige un hotel, entra a una habitación y reserva desde ahí.',
+            buttonText: 'Actualizar',
+            onPressed: _reload,
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async => _reload(),
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 112),
+            itemCount: data.bookings.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return const SectionHeader(
+                  title: 'Mis reservas',
+                  subtitle: 'Revisa el estado de tus habitaciones reservadas.',
+                );
+              }
+
+              final booking = data.bookings[index - 1];
+              final room = data.roomFor(booking.roomId);
+              final hotel = room == null ? null : data.hotelFor(room.hotelId);
+              return _BookingCard(
+                booking: booking,
+                room: room,
+                hotel: hotel,
+                loading: _updatingBookingId == booking.id,
+                onCancel: booking.status.toLowerCase() == 'cancelled' ? null : () => _cancelBooking(booking),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BookingsData {
+  final List<Booking> bookings;
+  final List<Room> rooms;
+  final List<Hotel> hotels;
+
+  const _BookingsData({required this.bookings, required this.rooms, required this.hotels});
+
+  Room? roomFor(int roomId) {
+    for (final room in rooms) {
+      if (room.id == roomId) return room;
+    }
+    return null;
+  }
+
+  Hotel? hotelFor(int hotelId) {
+    for (final hotel in hotels) {
+      if (hotel.id == hotelId) return hotel;
+    }
+    return null;
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  final Booking booking;
+  final Room? room;
+  final Hotel? hotel;
+  final bool loading;
+  final VoidCallback? onCancel;
+
+  const _BookingCard({
+    required this.booking,
+    required this.room,
+    required this.hotel,
+    required this.loading,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final status = booking.status.toLowerCase();
+    final isConfirmed = status == 'confirmed';
+    final isCancelled = status == 'cancelled' || status == 'canceled';
+    final statusColor = isConfirmed
+        ? const Color(0xFFE8F5E9)
+        : isCancelled
+            ? const Color(0xFFFFEBEE)
+            : const Color(0xFFFFF8E1);
+    final statusLabel = isConfirmed
+        ? 'Aceptada'
+        : isCancelled
+            ? 'Cancelada'
+            : 'Pendiente';
+
+    return SmartCard(
+      margin: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Crear reserva', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _roomId,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Room ID', prefixIcon: Icon(Icons.meeting_room), border: OutlineInputBorder()),
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEEF2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.king_bed_outlined, color: kPrimary),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _guestName,
-                decoration: const InputDecoration(labelText: 'Nombre del huésped', prefixIcon: Icon(Icons.person), border: OutlineInputBorder()),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(hotel?.name ?? 'Hotel no identificado',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 4),
+                    Text(room?.roomTypeName ?? 'Habitación reservada',
+                        style: const TextStyle(color: kMuted)),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _guestEmail,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Correo', prefixIcon: Icon(Icons.email), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: TextField(controller: _checkIn, decoration: const InputDecoration(labelText: 'Check-in', border: OutlineInputBorder()))),
-                  const SizedBox(width: 12),
-                  Expanded(child: TextField(controller: _checkOut, decoration: const InputDecoration(labelText: 'Check-out', border: OutlineInputBorder()))),
-                ],
-              ),
-              const SizedBox(height: 18),
-              SmartButton(text: 'Crear reserva', icon: Icons.add_circle, loading: _loading, onPressed: _createBooking),
+              Chip(label: Text(statusLabel), backgroundColor: statusColor),
             ],
           ),
-        ),
-        if (_created != null)
-          SmartCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Reserva creada', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Text('ID: ${_created!.id}'),
-                Text('Room ID: ${_created!.roomId}'),
-                Text('Huésped: ${_created!.guestName}'),
-                Text('Correo: ${_created!.guestEmail}'),
-                Text('Estado: ${_created!.status}'),
-                Text('Fechas: ${_created!.checkInDate} → ${_created!.checkOutDate}'),
-              ],
-            ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const Icon(Icons.calendar_month_outlined, size: 18, color: kMuted),
+              const SizedBox(width: 6),
+              Expanded(child: Text('${booking.checkInDate.split('T').first} al ${booking.checkOutDate.split('T').first}')),
+            ],
           ),
-        const SmartCard(
-          child: Text('Nota: el cliente puede crear reservas. La consulta global, confirmación y cancelación son funciones administrativas del backend.'),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.person_outline, size: 18, color: kMuted),
+              const SizedBox(width: 6),
+              Expanded(child: Text(booking.guestName)),
+            ],
+          ),
+          if (!isCancelled) ...[
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: loading ? null : onCancel,
+              icon: loading
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.cancel_outlined),
+              label: const Text('Cancelar reserva'),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

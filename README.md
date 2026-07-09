@@ -1,19 +1,13 @@
 # SmartStay Flutter - Cliente
 
-Aplicación Flutter para clientes/huéspedes de SmartStay, basada en el diseño de la app Android/Kotlin y conectada al backend.
+Aplicación Flutter enfocada en cliente/huésped.
 
-## Módulos del cliente
+## Flujo principal
 
-- Login
-- Registro de cliente
-- Alojamientos disponibles
-- Habitaciones disponibles
-- Crear reserva
-- Procesar pago
-- Perfil del cliente
-- Crear perfil
-- Cambiar contraseña
-- Cerrar sesión
+- La app permite explorar hoteles y habitaciones sin iniciar sesión.
+- Si el backend permite lectura pública, Flutter consume `/hotels` y `/rooms` directamente sin token.
+- Si el backend todavía protege esos endpoints, Flutter muestra datos de vista previa para que la app no quede bloqueada.
+- Para reservar, pagar, ver mis reservas, perfil y seguridad, se solicita iniciar sesión.
 
 ## Backend
 
@@ -23,24 +17,29 @@ URL por defecto:
 https://application-mobile-backend.onrender.com/api/v1
 ```
 
-Para usar otra URL:
+Cuando se actualice el backend, se recomienda dejar públicos:
 
-```bash
-flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:5192/api/v1
+```text
+GET /api/v1/hotels
+GET /api/v1/rooms
 ```
 
-Si Flutter Web falla por CORS durante pruebas locales:
+Y mantener protegidos:
 
-```bash
-flutter run -d chrome --web-browser-flag="--disable-web-security" --web-browser-flag="--user-data-dir=C:\temp\flutter_chrome"
+```text
+POST /api/v1/bookings
+GET /api/v1/bookings/me
+POST /api/v1/payments
+POST /api/v1/users/change-password
+POST /api/v1/profiles
 ```
 
-## Comandos
+## Ejecutar
 
-```bash
+```powershell
 flutter clean
 flutter pub get
 flutter analyze
 flutter test
-flutter run -d chrome --web-browser-flag="--disable-web-security" --web-browser-flag="--user-data-dir=C:\temp\flutter_chrome"
+flutter run -d chrome
 ```

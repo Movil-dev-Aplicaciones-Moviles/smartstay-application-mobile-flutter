@@ -69,20 +69,67 @@ class ApiClient {
     return user;
   }
 
+  /// Loads hotels from the backend whenever the endpoint is public.
+  ///
+  /// Current Render backend may still protect this endpoint with JWT. In that
+  /// case the app falls back to preview data so guests can still explore.
+  /// After the backend is updated to allow public reads, this same Flutter code
+  /// will automatically show real backend hotels and images before login.
   Future<List<Hotel>> getHotels() async {
-    final response = await _client.get(_uri('/hotels'), headers: _headers());
-    final data = await _decode(response);
-    if (data is List) {
-      return data.map((e) => Hotel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    final authenticated = _hasSession;
+
+    try {
+      final response = await _client.get(
+        _uri('/hotels'),
+        headers: _headers(auth: authenticated),
+      );
+      final data = await _decode(response);
+      if (data is List) {
+        final hotels = data.map((e) => Hotel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+        if (hotels.isNotEmpty) return hotels;
+      }
+    } catch (_) {
+      if (authenticated) rethrow;
     }
-    return const [];
+
+    return _previewHotels;
   }
 
+  /// Loads rooms from the backend whenever the endpoint is public.
+  /// Falls back to preview rooms only for guests while the backend still
+  /// requires authentication for read-only hotel/room endpoints.
   Future<List<Room>> getRooms() async {
-    final response = await _client.get(_uri('/rooms'), headers: _headers());
+    final authenticated = _hasSession;
+
+    try {
+      final response = await _client.get(
+        _uri('/rooms'),
+        headers: _headers(auth: authenticated),
+      );
+      final data = await _decode(response);
+      if (data is List) {
+        final rooms = data.map((e) => Room.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+        if (rooms.isNotEmpty) return rooms;
+      }
+    } catch (_) {
+      if (authenticated) rethrow;
+    }
+
+    return _previewRooms;
+  }
+
+  Future<List<Room>> getRoomsByHotel(int hotelId) async {
+    final rooms = await getRooms();
+    return rooms.where((room) => room.hotelId == hotelId).toList();
+  }
+
+  Future<List<Booking>> getMyBookings() async {
+    if (!_hasSession) return const [];
+
+    final response = await _client.get(_uri('/bookings/me'), headers: _headers());
     final data = await _decode(response);
     if (data is List) {
-      return data.map((e) => Room.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      return data.map((e) => Booking.fromJson(Map<String, dynamic>.from(e as Map))).toList();
     }
     return const [];
   }
@@ -94,6 +141,10 @@ class ApiClient {
     required String checkInDate,
     required String checkOutDate,
   }) async {
+    if (!_hasSession) {
+      throw Exception('Inicia sesión para completar la reserva.');
+    }
+
     final response = await _client.post(
       _uri('/bookings'),
       headers: _headers(),
@@ -109,6 +160,19 @@ class ApiClient {
     return Booking.fromJson(data);
   }
 
+  Future<Booking> cancelMyBooking(int bookingId) async {
+    if (!_hasSession) {
+      throw Exception('Inicia sesión para cancelar reservas.');
+    }
+
+    final response = await _client.post(
+      _uri('/bookings/$bookingId/cancel-by-guest'),
+      headers: _headers(),
+    );
+    final data = await _decode(response) as Map<String, dynamic>;
+    return Booking.fromJson(data);
+  }
+
   Future<Payment> processPayment({
     required int bookingId,
     required double amount,
@@ -118,6 +182,10 @@ class ApiClient {
     required String expirationDate,
     required String cvv,
   }) async {
+    if (!_hasSession) {
+      throw Exception('Inicia sesión para procesar pagos.');
+    }
+
     final response = await _client.post(
       _uri('/payments'),
       headers: _headers(),
@@ -145,6 +213,10 @@ class ApiClient {
     required String postalCode,
     required String country,
   }) async {
+    if (!_hasSession) {
+      throw Exception('Inicia sesión para guardar tu perfil.');
+    }
+
     final response = await _client.post(
       _uri('/profiles'),
       headers: _headers(),
@@ -163,6 +235,10 @@ class ApiClient {
   }
 
   Future<void> changePassword(String currentPassword, String newPassword) async {
+    if (!_hasSession) {
+      throw Exception('Inicia sesión para cambiar tu contraseña.');
+    }
+
     final response = await _client.post(
       _uri('/users/change-password'),
       headers: _headers(),
@@ -173,4 +249,67 @@ class ApiClient {
     );
     await _decode(response);
   }
+
+  bool get _hasSession {
+    final token = SessionStore.currentUser?.token;
+    return token != null && token.isNotEmpty;
+  }
+
+  static const List<Hotel> _previewHotels = [
+    Hotel(
+      id: 1,
+      hostId: 1,
+      name: 'Grand Hotel Bolivar',
+      location: 'Jr. de la Unión 958, Lima, Peru',
+      imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+      description: 'Hotel histórico en el centro de Lima.',
+      basePrice: 85.0,
+      type: 'Hotel',
+      amenities: ['Wifi', 'Restaurante', 'Bar'],
+    ),
+    Hotel(
+      id: 2,
+      hostId: 1,
+      name: 'Cusco Andean Lodge',
+      location: 'San Blas 123, Cusco, Peru',
+      imageUrl: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=1200&q=80',
+      description: 'Hospedaje andino cerca de las zonas más visitadas de Cusco.',
+      basePrice: 320.0,
+      type: 'Lodge',
+      amenities: ['Desayuno', 'Wifi', 'Gimnasio'],
+    ),
+  ];
+
+  static const List<Room> _previewRooms = [
+    Room(
+      id: 101,
+      hotelId: 1,
+      roomTypeId: 1,
+      roomTypeName: 'Single Standard',
+      price: 85.0,
+      description: 'Habitación estándar con vista interior.',
+      amenities: ['Wifi', 'TV'],
+      status: 'Clean',
+    ),
+    Room(
+      id: 102,
+      hotelId: 1,
+      roomTypeId: 2,
+      roomTypeName: 'Double Deluxe',
+      price: 150.0,
+      description: 'Habitación doble con balcón y vista a la plaza.',
+      amenities: ['Wifi', 'TV', 'Minibar'],
+      status: 'Clean',
+    ),
+    Room(
+      id: 201,
+      hotelId: 2,
+      roomTypeId: 3,
+      roomTypeName: 'Presidential Suite',
+      price: 320.0,
+      description: 'Suite amplia con vista panorámica a la ciudad.',
+      amenities: ['Jacuzzi', 'Wifi', 'Desayuno', 'Chimenea'],
+      status: 'Dirty',
+    ),
+  ];
 }

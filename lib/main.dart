@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'core/session.dart';
-import 'features/auth/login_page.dart';
 import 'features/client/client_shell.dart';
 import 'shared/ui.dart';
 
@@ -17,9 +16,32 @@ class SmartStayApp extends StatelessWidget {
       title: 'SmartStay',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: kPrimary),
+        colorScheme: ColorScheme.fromSeed(seedColor: kPrimary, brightness: Brightness.light),
         useMaterial3: true,
         scaffoldBackgroundColor: kSurface,
+        fontFamily: 'Arial',
+        textTheme: ThemeData.light().textTheme.apply(bodyColor: kSecondary, displayColor: kSecondary),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: kSurface,
+          foregroundColor: kSecondary,
+          centerTitle: false,
+          elevation: 0,
+          surfaceTintColor: kSurface,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: kPrimary, width: 1.5),
+          ),
+        ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(backgroundColor: kPrimary),
         ),
@@ -37,7 +59,7 @@ class StartupGate extends StatefulWidget {
 }
 
 class _StartupGateState extends State<StartupGate> {
-  late final Future<bool> _future;
+  late final Future<void> _future;
 
   @override
   void initState() {
@@ -45,21 +67,19 @@ class _StartupGateState extends State<StartupGate> {
     _future = _restore();
   }
 
-  Future<bool> _restore() async {
-    final user = await SessionStore.restore();
-    return user != null;
+  Future<void> _restore() async {
+    await SessionStore.restore();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
+    return FutureBuilder<void>(
       future: _future,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Scaffold(body: LoadingView(message: 'Iniciando SmartStay...'));
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(body: LoadingView(message: 'Preparando tu estadía...'));
         }
-        if (snapshot.data == true) return const ClientShell();
-        return const LoginPage();
+        return const ClientShell();
       },
     );
   }

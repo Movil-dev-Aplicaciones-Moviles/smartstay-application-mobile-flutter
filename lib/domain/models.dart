@@ -63,6 +63,8 @@ class Hotel {
       amenities: readStringList(json, 'amenities'),
     );
   }
+
+  String get mapsQuery => '$name, $location';
 }
 
 class Room {
@@ -73,6 +75,7 @@ class Room {
   final double price;
   final String description;
   final List<String> amenities;
+  final String status;
 
   const Room({
     required this.id,
@@ -82,6 +85,7 @@ class Room {
     required this.price,
     required this.description,
     required this.amenities,
+    required this.status,
   });
 
   factory Room.fromJson(Map<String, dynamic> json) {
@@ -93,7 +97,13 @@ class Room {
       price: readDouble(json, 'price'),
       description: readString(json, 'description', fallback: 'Sin descripción disponible.'),
       amenities: readStringList(json, 'amenities'),
+      status: readString(json, 'status', fallback: 'Available'),
     );
+  }
+
+  bool get isAvailable {
+    final normalized = status.toLowerCase();
+    return normalized == 'clean' || normalized == 'available' || normalized == 'disponible';
   }
 }
 

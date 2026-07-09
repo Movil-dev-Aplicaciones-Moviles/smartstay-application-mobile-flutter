@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
+import '../../core/session.dart';
 import '../../domain/models.dart';
 import '../../shared/ui.dart';
+import '../auth/login_page.dart';
 
 class PaymentsPage extends StatefulWidget {
   const PaymentsPage({super.key});
@@ -64,32 +66,49 @@ class _PaymentsPageState extends State<PaymentsPage> {
     }
   }
 
+  void _openLogin() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (SessionStore.currentUser == null) {
+      return AuthRequiredCard(
+        title: 'Inicia sesión para pagar',
+        message: 'Los pagos se habilitan después de iniciar sesión y crear una reserva.',
+        onLogin: _openLogin,
+      );
+    }
+
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
       children: [
+        const SectionHeader(
+          title: 'Pagos',
+          subtitle: 'Registra el pago de una reserva confirmada o pendiente.',
+        ),
         SmartCard(
+          margin: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Procesar pago', style: Theme.of(context).textTheme.titleLarge),
+              Text('Procesar pago', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 16),
-              TextField(controller: _bookingId, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Booking ID', prefixIcon: Icon(Icons.confirmation_number), border: OutlineInputBorder())),
+              TextField(controller: _bookingId, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Reserva ID', prefixIcon: Icon(Icons.confirmation_number))),
               const SizedBox(height: 12),
-              TextField(controller: _amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Amount', prefixIcon: Icon(Icons.payments), border: OutlineInputBorder())),
+              TextField(controller: _amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Monto', prefixIcon: Icon(Icons.payments))),
               const SizedBox(height: 12),
-              TextField(controller: _method, decoration: const InputDecoration(labelText: 'Payment method', prefixIcon: Icon(Icons.credit_card), border: OutlineInputBorder())),
+              TextField(controller: _method, decoration: const InputDecoration(labelText: 'Método de pago', prefixIcon: Icon(Icons.credit_card))),
               const SizedBox(height: 12),
-              TextField(controller: _cardNumber, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Card number', prefixIcon: Icon(Icons.credit_card), border: OutlineInputBorder())),
+              TextField(controller: _cardNumber, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Número de tarjeta', prefixIcon: Icon(Icons.credit_card))),
               const SizedBox(height: 12),
-              TextField(controller: _cardHolder, decoration: const InputDecoration(labelText: 'Card holder', prefixIcon: Icon(Icons.person), border: OutlineInputBorder())),
+              TextField(controller: _cardHolder, decoration: const InputDecoration(labelText: 'Titular', prefixIcon: Icon(Icons.person))),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: TextField(controller: _expiration, decoration: const InputDecoration(labelText: 'Expiration', border: OutlineInputBorder()))),
+                  Expanded(child: TextField(controller: _expiration, decoration: const InputDecoration(labelText: 'Vencimiento'))),
                   const SizedBox(width: 12),
-                  Expanded(child: TextField(controller: _cvv, obscureText: true, decoration: const InputDecoration(labelText: 'CVV', border: OutlineInputBorder()))),
+                  Expanded(child: TextField(controller: _cvv, obscureText: true, decoration: const InputDecoration(labelText: 'CVV'))),
                 ],
               ),
               const SizedBox(height: 18),
@@ -99,6 +118,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
         ),
         if (_payment != null)
           SmartCard(
+            margin: const EdgeInsets.only(top: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
